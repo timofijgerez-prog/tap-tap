@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>RichLife: Investor Tycoon</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --gold: #F5C518;
+    --gold2: #FFD700;
+    --green: #00C851;
+    --red: #ff4444;
+    --bg: #0A0E1A;
+    --card: #131929;
+    --card2: #1C2740;
+    --text: #FFFFFF;
+    --muted: #8892A4;
+    --accent: #4F8EF7;
+    --purple: #8B5CF6;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    user-select: none;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: linear-gradient(180deg, #0A0E1A 80%, transparent);
+    padding: 12px 16px 8px;
+  }
+  .balance-main {
+    text-align: center;
+    font-size: 32px; font-weight: 900;
+    background: linear-gradient(135deg, var(--gold), var(--gold2), #FFA500);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+  }
+  .balance-label { text-align: center; color: var(--muted); font-size: 11px; margin-bottom: 6px; }
+  .stats-row {
+    display: flex; gap: 8px; justify-content: center;
+  }
+  .stat-chip {
+    background: var(--card2); border-radius: 20px;
+    padding: 4px 12px; font-size: 11px; color: var(--muted);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .stat-chip span { color: var(--green); font-weight: 700; }
+
+  /* ── TAB BAR ── */
+  .tabbar {
+    display: flex; background: var(--card);
+    border-bottom: 1px solid #1E2A3A;
+    position: sticky; top: 85px; z-index: 99;
+  }
+  .tab {
+    flex: 1; padding: 10px 4px; text-align: center;
+    font-size: 10px; color: var(--muted); cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all .2s;
+  }
+  .tab.active { color: var(--gold); border-color: var(--gold); }
+  .tab-icon { font-size: 18px; display: block; margin-bottom: 2px; }
+
+  /* ── PAGES ── */
+  .page { display: none; padding: 12px 12px 80px; }
+  .page.active { display: block; }
+
+  /* ── CARDS ── */
+  .section-title {
+    font-size: 13px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1px;
+    margin: 16px 0 8px;
+  }
+  .card {
+    background: var(--card); border-radius: 16px;
+    padding: 14px; margin-bottom: 10px;
+    border: 1px solid #1E2A3A;
+  }
+  .card-row { display: flex; align-items: center; gap: 12px; }
+  .card-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; flex-shrink: 0;
+  }
+  .card-info { flex: 1; min-width: 0; }
+  .card-name { font-size: 14px; font-weight: 700; }
+  .card-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .card-income { font-size: 12px; color: var(--green); font-weight: 600; }
+  .card-right { text-align: right; flex-shrink: 0; }
+  .card-level {
+    background: var(--card2); border-radius: 8px;
+    padding: 2px 8px; font-size: 11px; color: var(--accent);
+    font-weight: 700; margin-bottom: 4px; display: inline-block;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    border: none; border-radius: 12px; cursor: pointer;
+    font-family: 'Inter', sans-serif; font-weight: 700;
+    transition: all .15s; active: transform: scale(.96);
+  }
+  .btn:active { transform: scale(.95); }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold), #FFA500);
+    color: #000; padding: 8px 16px; font-size: 13px;
+  }
+  .btn-buy {
+    background: linear-gradient(135deg, var(--gold), #FFA500);
+    color: #000; padding: 6px 14px; font-size: 12px; border-radius: 10px;
+    border: none; cursor: pointer; font-weight: 800; font-family: 'Inter', sans-serif;
+  }
+  .btn-buy:active { transform: scale(.93); }
+  .btn-buy:disabled { background: #2A3550; color: var(--muted); cursor: not-allowed; transform: none; }
+  .btn-upgrade {
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    color: #fff; padding: 6px 14px; font-size: 12px; border-radius: 10px;
+    border: none; cursor: pointer; font-weight: 800; font-family: 'Inter', sans-serif;
+  }
+  .btn-upgrade:active { transform: scale(.93); }
+  .btn-upgrade:disabled { background: #2A3550; color: var(--muted); cursor: not-allowed; transform: none; }
+
+  /* ── TAP ZONE ── */
+  .tap-zone {
+    text-align: center; padding: 20px 0 10px;
+  }
+  .tap-coin {
+    width: 140px; height: 140px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #FFE066, var(--gold), #B8860B);
+    margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 64px;
+    box-shadow: 0 0 40px rgba(245,197,24,.4), 0 8px 32px rgba(0,0,0,.5);
+    cursor: pointer; transition: transform .1s;
+    position: relative; overflow: visible;
+  }
+  .tap-coin:active { transform: scale(.92); }
+  .tap-value {
+    font-size: 15px; color: var(--muted);
+  }
+  .tap-value b { color: var(--gold); }
+  .float-text {
+    position: absolute; font-size: 18px; font-weight: 900;
+    color: var(--gold); pointer-events: none; animation: floatUp .8s ease-out forwards;
+    white-space: nowrap;
+  }
+  @keyframes floatUp {
+    0%   { opacity:1; transform: translateY(0) scale(1); }
+    100% { opacity:0; transform: translateY(-70px) scale(.7); }
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap { margin-top: 8px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+  .progress-bar { background: #1E2A3A; border-radius: 4px; height: 6px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+
+  /* ── STOCK ── */
+  .stock-item {
+    background: var(--card); border-radius: 14px;
+    padding: 12px 14px; margin-bottom: 8px;
+    border: 1px solid #1E2A3A; cursor: pointer;
+  }
+  .stock-header { display: flex; justify-content: space-between; align-items: center; }
+  .stock-name { font-size: 14px; font-weight: 700; }
+  .stock-ticker { font-size: 11px; color: var(--muted); }
+  .stock-price { font-size: 16px; font-weight: 900; }
+  .stock-change { font-size: 11px; font-weight: 700; }
+  .up { color: var(--green); }
+  .down { color: var(--red); }
+  .stock-chart { height: 36px; margin: 8px 0 4px; overflow: hidden; }
+  .stock-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .stock-actions button { flex: 1; }
+  .owned-badge {
+    background: rgba(79,142,247,.15); color: var(--accent);
+    border-radius: 8px; padding: 3px 10px; font-size: 11px; font-weight: 700;
+  }
+
+  /* ── CRYPTO ── */
+  .crypto-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .crypto-card {
+    background: var(--card); border-radius: 14px; padding: 12px;
+    border: 1px solid #1E2A3A;
+  }
+  .crypto-icon { font-size: 28px; margin-bottom: 6px; }
+  .crypto-name { font-size: 13px; font-weight: 700; }
+  .crypto-price { font-size: 14px; font-weight: 900; margin-top: 2px; }
+  .crypto-actions { display: flex; gap: 6px; margin-top: 8px; }
+  .crypto-actions button { flex: 1; font-size: 11px; padding: 5px 0; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; font-family: 'Inter', sans-serif; }
+  .btn-green { background: rgba(0,200,81,.2); color: var(--green); }
+  .btn-red   { background: rgba(255,68,68,.2); color: var(--red); }
+  .btn-green:active, .btn-red:active { transform: scale(.93); }
+
+  /* ── REAL ESTATE ── */
+  .estate-card {
+    background: var(--card); border-radius: 16px;
+    padding: 0; margin-bottom: 10px; overflow: hidden;
+    border: 1px solid #1E2A3A;
+  }
+  .estate-img {
+    height: 100px; display: flex; align-items: center; justify-content: center;
+    font-size: 52px;
+  }
+  .estate-body { padding: 12px; }
+  .estate-name { font-size: 15px; font-weight: 700; }
+  .estate-city { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .estate-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .estate-income { font-size: 13px; color: var(--green); font-weight: 700; }
+  .estate-price { font-size: 12px; color: var(--muted); }
+
+  /* ── PROFILE ── */
+  .profile-hero {
+    background: linear-gradient(135deg, #1C2740, #0A0E1A);
+    border-radius: 20px; padding: 20px; text-align: center;
+    border: 1px solid #1E2A3A; margin-bottom: 12px;
+  }
+  .avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), #FFA500);
+    margin: 0 auto 10px; display: flex; align-items: center;
+    justify-content: center; font-size: 36px;
+  }
+  .profile-name { font-size: 18px; font-weight: 900; }
+  .profile-rank { color: var(--gold); font-size: 12px; margin-top: 4px; font-weight: 600; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .stat-box {
+    background: var(--card2); border-radius: 12px; padding: 12px; text-align: center;
+  }
+  .stat-val { font-size: 16px; font-weight: 900; color: var(--gold); }
+  .stat-lbl { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  /* ── ACHIEVEMENT ── */
+  .ach-item {
+    background: var(--card); border-radius: 14px; padding: 12px;
+    margin-bottom: 8px; border: 1px solid #1E2A3A;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .ach-icon { font-size: 28px; flex-shrink: 0; }
+  .ach-name { font-size: 13px; font-weight: 700; }
+  .ach-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .ach-done { margin-left: auto; font-size: 20px; flex-shrink: 0; }
+
+  /* ── NOTIFICATION ── */
+  .notif {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    background: var(--green); color: #000; border-radius: 20px;
+    padding: 8px 20px; font-size: 13px; font-weight: 700;
+    z-index: 9999; animation: fadeInOut 2s ease-out forwards;
+    white-space: nowrap; box-shadow: 0 4px 20px rgba(0,200,81,.4);
+  }
+  @keyframes fadeInOut {
+    0%   { opacity:0; transform: translateX(-50%) translateY(-10px); }
+    15%  { opacity:1; transform: translateX(-50%) translateY(0); }
+    75%  { opacity:1; }
+    100% { opacity:0; transform: translateX(-50%) translateY(-10px); }
+  }
+
+  /* ── BOTTOM NAV SPACER ── */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--card); border-top: 1px solid #1E2A3A;
+    display: flex; padding-bottom: env(safe-area-inset-bottom, 8px);
+    z-index: 200;
+  }
+  .nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 8px 0; cursor: pointer; color: var(--muted); font-size: 10px;
+    transition: color .2s; border: none; background: none;
+  }
+  .nav-btn.active { color: var(--gold); }
+  .nav-btn-icon { font-size: 20px; margin-bottom: 2px; }
+
+  /* mini sparkline */
+  .sparkline { display: flex; align-items: flex-end; gap: 2px; height: 36px; }
+  .spark-bar { flex: 1; border-radius: 2px 2px 0 0; min-width: 4px; }
+</style>
+</head>
+<body>
+
+<!-- TOP BALANCE BAR -->
+<div class="topbar">
+  <div class="balance-label">💰 Ваш капітал</div>
+  <div class="balance-main" id="balanceDisplay">$0</div>
+  <div class="stats-row">
+    <div class="stat-chip">📈 Дохід: <span id="incomeDisplay">$0/с</span></div>
+    <div class="stat-chip">👆 Клік: <span id="tapDisplay">$1</span></div>
+    <div class="stat-chip">🏆 Рівень: <span id="levelDisplay">1</span></div>
+  </div>
+</div>
+
+<!-- PAGES -->
+
+<!-- ===== PAGE: MAIN (TAP) ===== -->
+<div class="page active" id="page-main">
+  <div class="tap-zone">
+    <div class="tap-coin" id="tapCoin">💰</div>
+    <div class="tap-value">Натискай і заробляй <b id="tapValLabel">$1</b> за клік</div>
+  </div>
+
+  <div class="section-title">🏢 Бізнес</div>
+
+  <div id="businessList"></div>
+</div>
+
+<!-- ===== PAGE: STOCKS ===== -->
+<div class="page" id="page-stocks">
+  <div class="section-title">📈 Фондовий ринок</div>
+  <div id="stockList"></div>
+</div>
+
+<!-- ===== PAGE: CRYPTO ===== -->
+<div class="page" id="page-crypto">
+  <div class="section-title">₿ Криптовалюта</div>
+  <div class="crypto-grid" id="cryptoGrid"></div>
+</div>
+
+<!-- ===== PAGE: ESTATE ===== -->
+<div class="page" id="page-estate">
+  <div class="section-title">🏠 Нерухомість</div>
+  <div id="estateList"></div>
+</div>
+
+<!-- ===== PAGE: PROFILE ===== -->
+<div class="page" id="page-profile">
+  <div class="profile-hero">
+    <div class="avatar">🤵</div>
+    <div class="profile-name" id="profileName">Інвестор</div>
+    <div class="profile-rank" id="profileRank">⭐ Початківець</div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-val" id="pTotalEarned">$0</div><div class="stat-lbl">Всього зароблено</div></div>
+      <div class="stat-box"><div class="stat-val" id="pTaps">0</div><div class="stat-lbl">Кліків</div></div>
+      <div class="stat-box"><div class="stat-val" id="pBusinesses">0</div><div class="stat-lbl">Бізнесів</div></div>
+      <div class="stat-box"><div class="stat-val" id="pNetWorth">$0</div><div class="stat-lbl">Стан</div></div>
+    </div>
+  </div>
+
+  <div class="section-title">🏆 Досягнення</div>
+  <div id="achievementList"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn active" onclick="switchPage('main',this)">
+    <div class="nav-btn-icon">👆</div>Тапати
+  </button>
+  <button class="nav-btn" onclick="switchPage('stocks',this)">
+    <div class="nav-btn-icon">📈</div>Акції
+  </button>
+  <button class="nav-btn" onclick="switchPage('crypto',this)">
+    <div class="nav-btn-icon">₿</div>Крипто
+  </button>
+  <button class="nav-btn" onclick="switchPage('estate',this)">
+    <div class="nav-btn-icon">🏠</div>Майно
+  </button>
+  <button class="nav-btn" onclick="switchPage('profile',this)">
+    <div class="nav-btn-icon">👤</div>Профіль
+  </button>
+</div>
+
+<script>
+// ─── TELEGRAM INIT ───
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  tg.setHeaderColor('#0A0E1A');
+}
+
+// ─── GAME STATE ───
+let G = {
+  balance: 0,
+  totalEarned: 0,
+  taps: 0,
+  tapPower: 1,
+  passiveIncome: 0,
+  level: 1,
+  businesses: {},
+  stocks: {},
+  crypto: {},
+  estates: {},
+  lastSave: Date.now()
+};
+
+// ─── BUSINESS DATA ───
+const BUSINESSES = [
+  { id:'cafe',     name:'Кав\'ярня',        icon:'☕', bg:'#2A1F3D', baseCost:50,    baseIncome:0.5,  desc:'Перший бізнес' },
+  { id:'shop',     name:'Магазин',          icon:'🛍️', bg:'#1F2D3A', baseCost:200,   baseIncome:2,    desc:'Роздрібна торгівля' },
+  { id:'rest',     name:'Ресторан',         icon:'🍽️', bg:'#2A2510', baseCost:800,   baseIncome:8,    desc:'Преміум заклад' },
+  { id:'it',       name:'IT-компанія',      icon:'💻', bg:'#0F2040', baseCost:3000,  baseIncome:30,   desc:'Технологічний стартап' },
+  { id:'bank',     name:'Банк',             icon:'🏦', bg:'#1A2010', baseCost:12000, baseIncome:120,  desc:'Фінансові послуги' },
+  { id:'factory',  name:'Завод',            icon:'🏭', bg:'#2A1010', baseCost:50000, baseIncome:500,  desc:'Промисловість' },
+  { id:'media',    name:'Медіахолдинг',     icon:'📺', bg:'#1A1030', baseCost:200000,baseIncome:2000, desc:'ЗМІ та розваги' },
+  { id:'oil',      name:'Нафтова компанія', icon:'🛢️', bg:'#0A1520', baseCost:1000000,baseIncome:10000,desc:'Енергетика' },
+];
+
+// ─── STOCK DATA ───
+const STOCKS_DEF = [
+  { id:'techx', name:'TechX Corp',   ticker:'TXC', price:120,  emoji:'💻' },
+  { id:'groco', name:'GrocoCo',      ticker:'GRC', price:45,   emoji:'🛒' },
+  { id:'pharmx',name:'PharmX Ltd',   ticker:'PHX', price:89,   emoji:'💊' },
+  { id:'energo',name:'Energo Plus',  ticker:'ENP', price:210,  emoji:'⚡' },
+  { id:'automax',name:'AutoMax',     ticker:'AMX', price:330,  emoji:'🚗' },
+  { id:'aifund', name:'AI Fund',     ticker:'AIF', price:580,  emoji:'🤖' },
+];
+
+// ─── CRYPTO DATA ───
+const CRYPTO_DEF = [
+  { id:'btc',  name:'Bitcoin',  symbol:'BTC', icon:'₿',  price:42000 },
+  { id:'eth',  name:'Ethereum', symbol:'ETH', icon:'Ξ',  price:2800  },
+  { id:'sol',  name:'Solana',   symbol:'SOL', icon:'◎',  price:120   },
+  { id:'bnb',  name:'BNB',      symbol:'BNB', icon:'🔸', price:380   },
+  { id:'ada',  name:'Cardano',  symbol:'ADA', icon:'₳',  price:0.58  },
+  { id:'dot',  name:'Polkadot', symbol:'DOT', icon:'●',  price:8.4   },
+];
+
+// ─── ESTATE DATA ───
+const ESTATES_DEF = [
+  { id:'apt1',  name:'Квартира-студія',    city:'Київ',       icon:'🏠',  bg:'#1E3A2F', price:5000,   income:50  },
+  { id:'apt2',  name:'3-кімнатна квартира',city:'Львів',      icon:'🏡',  bg:'#2A1F10', price:15000,  income:150 },
+  { id:'office',name:'Офісний центр',      city:'Харків',     icon:'🏢',  bg:'#102030', price:60000,  income:600 },
+  { id:'hotel', name:'Готель 4★',          city:'Одеса',      icon:'🏨',  bg:'#201030', price:250000, income:2500},
+  { id:'mall',  name:'Торговий центр',     city:'Дніпро',     icon:'🏬',  bg:'#102020', price:1000000,income:10000},
+  { id:'island',name:'Острів-курорт',      city:'Мальдіви',   icon:'🏝️',  bg:'#103020', price:5000000,income:50000},
+];
+
+// ─── ACHIEVEMENTS ───
+const ACHIEVEMENTS = [
+  { id:'first_tap',  icon:'👆', name:'Перший крок',       desc:'Натисни вперше',        check: ()=> G.taps >= 1 },
+  { id:'tap100',     icon:'🖱️', name:'Маніяк кліків',     desc:'100 кліків',            check: ()=> G.taps >= 100 },
+  { id:'earn1k',     icon:'💵', name:'Перша тисяча',       desc:'Заробити $1,000',       check: ()=> G.totalEarned >= 1000 },
+  { id:'earn1m',     icon:'💰', name:'Мільйонер',          desc:'Заробити $1,000,000',   check: ()=> G.totalEarned >= 1000000 },
+  { id:'biz3',       icon:'🏢', name:'Бізнесмен',          desc:'Купити 3 бізнеси',      check: ()=> Object.keys(G.businesses).length >= 3 },
+  { id:'stock1',     icon:'📈', name:'Перша акція',        desc:'Купити акцію',          check: ()=> Object.values(G.stocks).some(s=>s.shares>0) },
+  { id:'crypto1',    icon:'₿',  name:'Крипто-інвестор',    desc:'Купити криптовалюту',   check: ()=> Object.values(G.crypto).some(c=>c.amount>0) },
+  { id:'estate1',    icon:'🏠', name:'Домовласник',        desc:'Купити нерухомість',    check: ()=> Object.keys(G.estates).length >= 1 },
+  { id:'lvl5',       icon:'⭐', name:'Досвідчений',        desc:'Досягти 5 рівня',       check: ()=> G.level >= 5 },
+  { id:'lvl10',      icon:'🏆', name:'Магнат',             desc:'Досягти 10 рівня',      check: ()=> G.level >= 10 },
+];
+
+let achDone = new Set();
+
+// ─── LIVE PRICES ───
+let stockPrices = {};
+let cryptoPrices = {};
+let stockHistory = {};
+let cryptoHistory = {};
+
+function initPrices() {
+  STOCKS_DEF.forEach(s => {
+    stockPrices[s.id] = s.price;
+    stockHistory[s.id] = Array.from({length:12}, ()=> s.price * (0.8 + Math.random()*.4));
+    if (!G.stocks[s.id]) G.stocks[s.id] = { shares:0, avgBuy:0 };
+  });
+  CRYPTO_DEF.forEach(c => {
+    cryptoPrices[c.id] = c.price;
+    cryptoHistory[c.id] = Array.from({length:12}, ()=> c.price * (0.7 + Math.random()*.6));
+    if (!G.crypto[c.id]) G.crypto[c.id] = { amount:0, avgBuy:0 };
+  });
+}
+
+function tickPrices() {
+  STOCKS_DEF.forEach(s => {
+    const change = (Math.random()-.48) * 0.04;
+    stockPrices[s.id] = Math.max(1, stockPrices[s.id] * (1+change));
+    stockHistory[s.id].push(stockPrices[s.id]);
+    if (stockHistory[s.id].length > 12) stockHistory[s.id].shift();
+  });
+  CRYPTO_DEF.forEach(c => {
+    const change = (Math.random()-.48) * 0.07;
+    cryptoPrices[c.id] = Math.max(0.001, cryptoPrices[c.id] * (1+change));
+    cryptoHistory[c.id].push(cryptoPrices[c.id]);
+    if (cryptoHistory[c.id].length > 12) cryptoHistory[c.id].shift();
+  });
+}
+
+// ─── FORMAT ───
+function fmt(n) {
+  if (n >= 1e12) return '$' + (n/1e12).toFixed(2) + 'T';
+  if (n >= 1e9)  return '$' + (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6)  return '$' + (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3)  return '$' + (n/1e3).toFixed(1) + 'K';
+  return '$' + n.toFixed(n < 10 ? 2 : 0);
+}
+function fmtShort(n) { return fmt(n).replace('$',''); }
+function fmtCrypto(n) {
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (n >= 1000) return '$' + n.toFixed(0);
+  if (n >= 1)    return '$' + n.toFixed(2);
+  return '$' + n.toFixed(4);
+}
+
+// ─── PASSIVE INCOME CALC ───
+function calcPassive() {
+  let inc = 0;
+  BUSINESSES.forEach(b => {
+    const lvl = G.businesses[b.id] || 0;
+    if (lvl > 0) inc += b.baseIncome * lvl * Math.pow(1.15, lvl-1);
+  });
+  ESTATES_DEF.forEach(e => {
+    if (G.estates[e.id]) inc += e.income;
+  });
+  G.passiveIncome = inc;
+}
+
+// ─── LEVEL ───
+function calcLevel() {
+  const thresholds = [0,100,500,2000,8000,30000,120000,500000,2000000,10000000,50000000];
+  for (let i = thresholds.length-1; i >= 0; i--) {
+    if (G.totalEarned >= thresholds[i]) { G.level = i+1; break; }
+  }
+  G.tapPower = G.level;
+}
+
+const RANKS = ['','Початківець','Підприємець','Бізнесмен','Інвестор','Директор','Магнат','Мільйонер','Мільярдер','Олігарх','Легенда'];
+
+// ─── BUSINESS COST ───
+function bizCost(b) {
+  const lvl = G.businesses[b.id] || 0;
+  return Math.ceil(b.baseCost * Math.pow(1.8, lvl));
+}
+
+// ─── RENDER ───
+function renderBusinesses() {
+  const el = document.getElementById('businessList');
+  el.innerHTML = '';
+  BUSINESSES.forEach(b => {
+    const lvl = G.businesses[b.id] || 0;
+    const cost = bizCost(b);
+    const income = lvl > 0 ? (b.baseIncome * lvl * Math.pow(1.15, lvl-1)) : b.baseIncome;
+    const canBuy = G.balance >= cost;
+    const pct = Math.min(100, (G.balance/cost)*100);
+
+    el.innerHTML += `
+    <div class="card">
+      <div class="card-row">
+        <div class="card-icon" style="background:${b.bg}">${b.icon}</div>
+        <div class="card-info">
+          <div class="card-name">${b.name}</div>
+          <div class="card-desc">${b.desc}</div>
+          <div class="card-income">💰 ${fmt(income)}/сек</div>
+        </div>
+        <div class="card-right">
+          ${lvl>0 ? `<div class="card-level">Рів. ${lvl}</div>` : ''}
+          <button class="btn-${lvl===0?'buy':'upgrade'}" onclick="buyBusiness('${b.id}')" ${!canBuy?'disabled':''}>
+            ${fmt(cost)}
+          </button>
+        </div>
+      </div>
+      ${lvl===0?`
+      <div class="progress-wrap">
+        <div class="progress-label"><span>${fmt(G.balance)}</span><span>${fmt(cost)}</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:linear-gradient(90deg,#F5C518,#FFA500)"></div></div>
+      </div>`:''}
+    </div>`;
+  });
+}
+
+function renderStocks() {
+  const el = document.getElementById('stockList');
+  el.innerHTML = '';
+  STOCKS_DEF.forEach(s => {
+    const price = stockPrices[s.id];
+    const hist = stockHistory[s.id];
+    const prevPrice = hist[hist.length-2] || price;
+    const changePct = ((price - prevPrice)/prevPrice*100);
+    const owned = G.stocks[s.id].shares;
+    const avgBuy = G.stocks[s.id].avgBuy;
+    const pnl = owned > 0 ? (price - avgBuy)*owned : 0;
+    const up = changePct >= 0;
+
+    const bars = hist.map((v,i) => {
+      const mn = Math.min(...hist), mx = Math.max(...hist);
+      const h = mx===mn ? 50 : ((v-mn)/(mx-mn))*100;
+      const col = i===hist.length-1 ? (up?'#00C851':'#ff4444') : '#2A3550';
+      return `<div class="spark-bar" style="height:${Math.max(8,h)}%;background:${col}"></div>`;
+    }).join('');
+
+    el.innerHTML += `
+    <div class="stock-item">
+      <div class="stock-header">
+        <div>
+          <div class="stock-name">${s.emoji} ${s.name}</div>
+          <div class="stock-ticker">${s.ticker} ${owned>0?`· ${owned} шт.`:''}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="stock-price">${fmt(price)}</div>
+          <div class="stock-change ${up?'up':'down'}">${up?'▲':'▼'} ${Math.abs(changePct).toFixed(2)}%</div>
+        </div>
+      </div>
+      <div class="stock-chart"><div class="sparkline">${bars}</div></div>
+      ${owned>0?`<div style="font-size:11px;color:${pnl>=0?'var(--green)':'var(--red)'};margin-bottom:6px">
+        Прибуток/збиток: ${pnl>=0?'+':''}${fmt(pnl)}
+      </div>`:''}
+      <div class="stock-actions">
+        <button class="btn-buy" onclick="buyStock('${s.id}')" ${G.balance<price?'disabled':''}>Купити ${fmt(price)}</button>
+        <button class="btn-upgrade" onclick="sellStock('${s.id}')" ${owned===0?'disabled':''} style="${owned===0?'':'background:linear-gradient(135deg,#ff4444,#cc0000)'}">Продати</button>
+      </div>
+    </div>`;
+  });
+}
+
+function renderCrypto() {
+  const el = document.getElementById('cryptoGrid');
+  el.innerHTML = '';
+  CRYPTO_DEF.forEach(c => {
+    const price = cryptoPrices[c.id];
+    const hist = cryptoHistory[c.id];
+    const prev = hist[hist.length-2] || price;
+    const chg = ((price-prev)/prev*100);
+    const owned = G.crypto[c.id].amount;
+    const up = chg >= 0;
+
+    el.innerHTML += `
+    <div class="crypto-card">
+      <div class="crypto-icon">${c.icon}</div>
+      <div class="crypto-name">${c.name}</div>
+      <div class="crypto-price">${fmtCrypto(price)}</div>
+      <div class="stock-change ${up?'up':'down'}" style="font-size:11px;margin-top:2px">${up?'▲':'▼'} ${Math.abs(chg).toFixed(2)}%</div>
+      ${owned>0?`<div style="font-size:10px;color:var(--muted);margin-top:4px">${owned.toFixed(4)} ${c.symbol}</div>`:''}
+      <div class="crypto-actions">
+        <button class="btn-green" onclick="buyCrypto('${c.id}')" ${G.balance<price*0.01?'disabled':''}>Купити</button>
+        <button class="btn-red"   onclick="sellCrypto('${c.id}')" ${owned<=0?'disabled':''}>Продати</button>
+      </div>
+    </div>`;
+  });
+}
+
+function renderEstate() {
+  const el = document.getElementById('estateList');
+  el.innerHTML = '';
+  ESTATES_DEF.forEach(e => {
+    const owned = !!G.estates[e.id];
+    const canBuy = G.balance >= e.price && !owned;
+
+    el.innerHTML += `
+    <div class="estate-card">
+      <div class="estate-img" style="background:${e.bg}">${e.icon}</div>
+      <div class="estate-body">
+        <div class="estate-name">${e.name}</div>
+        <div class="estate-city">📍 ${e.city}</div>
+        <div class="estate-footer">
+          <div>
+            <div class="estate-income">+${fmt(e.income)}/сек</div>
+            <div class="estate-price">Ціна: ${fmt(e.price)}</div>
+          </div>
+          ${owned
+            ? `<div class="owned-badge">✅ Ваше</div>`
+            : `<button class="btn-buy" onclick="buyEstate('${e.id}')" ${!canBuy?'disabled':''}>Придбати</button>`
+          }
+        </div>
+      </div>
+    </div>`;
+  });
+}
+
+function renderProfile() {
+  document.getElementById('profileName').textContent = tg?.initDataUnsafe?.user?.first_name || 'Інвестор';
+  document.getElementById('profileRank').textContent = '⭐ ' + (RANKS[Math.min(G.level, RANKS.length-1)] || 'Легенда');
+  document.getElementById('pTotalEarned').textContent = fmt(G.totalEarned);
+  document.getElementById('pTaps').textContent = G.taps;
+  document.getElementById('pBusinesses').textContent = Object.keys(G.businesses).length;
+  document.getElementById('pNetWorth').textContent = fmt(G.balance);
+
+  const el = document.getElementById('achievementList');
+  el.innerHTML = '';
+  ACHIEVEMENTS.forEach(a => {
+    const done = achDone.has(a.id);
+    el.innerHTML += `
+    <div class="ach-item" style="${!done?'opacity:.5':''}">
+      <div class="ach-icon">${a.icon}</div>
+      <div><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div>
+      <div class="ach-done">${done?'✅':'🔒'}</div>
+    </div>`;
+  });
+}
+
+function updateHUD() {
+  document.getElementById('balanceDisplay').textContent = fmt(G.balance);
+  document.getElementById('incomeDisplay').textContent = fmt(G.passiveIncome) + '/с';
+  document.getElementById('tapDisplay').textContent = fmt(G.tapPower);
+  document.getElementById('levelDisplay').textContent = G.level;
+  document.getElementById('tapValLabel').textContent = fmt(G.tapPower);
+}
+
+// ─── ACTIONS ───
+function buyBusiness(id) {
+  const b = BUSINESSES.find(x=>x.id===id);
+  const cost = bizCost(b);
+  if (G.balance < cost) return;
+  G.balance -= cost;
+  G.businesses[id] = (G.businesses[id] || 0) + 1;
+  calcPassive();
+  showNotif(`✅ ${b.name} ${G.businesses[id]>1?'покращено':'відкрито'}!`);
+  renderBusinesses();
+  updateHUD();
+  checkAch();
+}
+
+function buyStock(id) {
+  const price = stockPrices[id];
+  if (G.balance < price) return;
+  G.balance -= price;
+  const s = G.stocks[id];
+  s.avgBuy = (s.avgBuy * s.shares + price) / (s.shares + 1);
+  s.shares += 1;
+  showNotif('📈 Акцію куплено!');
+  renderStocks();
+  updateHUD();
+  checkAch();
+}
+
+function sellStock(id) {
+  const s = G.stocks[id];
+  if (s.shares <= 0) return;
+  const price = stockPrices[id];
+  G.balance += price;
+  G.totalEarned += price;
+  s.shares -= 1;
+  if (s.shares === 0) s.avgBuy = 0;
+  showNotif('💵 Акцію продано!');
+  renderStocks();
+  updateHUD();
+}
+
+function buyCrypto(id) {
+  const price = cryptoPrices[id];
+  const spend = Math.min(G.balance, price * 0.1);
+  if (spend < price * 0.001) return;
+  G.balance -= spend;
+  const amount = spend / price;
+  const c = G.crypto[id];
+  c.avgBuy = (c.avgBuy * c.amount + spend) / (c.amount + amount);
+  c.amount += amount;
+  showNotif('₿ Крипту куплено!');
+  renderCrypto();
+  updateHUD();
+  checkAch();
+}
+
+function sellCrypto(id) {
+  const c = G.crypto[id];
+  if (c.amount <= 0) return;
+  const price = cryptoPrices[id];
+  const val = c.amount * price;
+  G.balance += val;
+  G.totalEarned += val;
+  c.amount = 0; c.avgBuy = 0;
+  showNotif('💵 Крипту продано!');
+  renderCrypto();
+  updateHUD();
+}
+
+function buyEstate(id) {
+  const e = ESTATES_DEF.find(x=>x.id===id);
+  if (!e || G.balance < e.price || G.estates[id]) return;
+  G.balance -= e.price;
+  G.estates[id] = true;
+  calcPassive();
+  showNotif(`🏠 ${e.name} придбано!`);
+  renderEstate();
+  updateHUD();
+  checkAch();
+}
+
+// ─── TAP ───
+document.getElementById('tapCoin').addEventListener('click', function(e) {
+  const earned = G.tapPower;
+  G.balance += earned;
+  G.totalEarned += earned;
+  G.taps++;
+  calcLevel();
+  updateHUD();
+  checkAch();
+
+  // float animation
+  const rect = this.getBoundingClientRect();
+  const span = document.createElement('span');
+  span.className = 'float-text';
+  span.textContent = '+' + fmt(earned);
+  span.style.left = (e.clientX - rect.left - 20) + 'px';
+  span.style.top  = (e.clientY - rect.top  - 20) + 'px';
+  this.appendChild(span);
+  setTimeout(()=> span.remove(), 800);
+
+  if (G.taps % 20 === 0) renderBusinesses();
+});
+
+// ─── ACHIEVEMENTS ───
+function checkAch() {
+  ACHIEVEMENTS.forEach(a => {
+    if (!achDone.has(a.id) && a.check()) {
+      achDone.add(a.id);
+      showNotif('🏆 Досягнення: ' + a.name);
+    }
+  });
+}
+
+// ─── NOTIFICATION ───
+function showNotif(msg) {
+  const n = document.createElement('div');
+  n.className = 'notif';
+  n.textContent = msg;
+  document.body.appendChild(n);
+  setTimeout(()=> n.remove(), 2100);
+}
+
+// ─── PAGE SWITCH ───
+function switchPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'profile') renderProfile();
+  if (name === 'stocks')  renderStocks();
+  if (name === 'crypto')  renderCrypto();
+  if (name === 'estate')  renderEstate();
+}
+
+// ─── SAVE / LOAD ───
+function saveGame() {
+  try { localStorage.setItem('richlife_save', JSON.stringify({G, achDone:[...achDone]})); } catch(e){}
+}
+function loadGame() {
+  try {
+    const raw = localStorage.getItem('richlife_save');
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    Object.assign(G, d.G);
+    achDone = new Set(d.achDone || []);
+  } catch(e){}
+}
+
+// ─── OFFLINE INCOME ───
+function applyOffline() {
+  const secs = Math.min((Date.now() - (G.lastSave||Date.now())) / 1000, 3600);
+  if (secs > 5 && G.passiveIncome > 0) {
+    const earned = secs * G.passiveIncome;
+    G.balance += earned;
+    G.totalEarned += earned;
+    showNotif(`⏰ Офлайн дохід: ${fmt(earned)}`);
+  }
+  G.lastSave = Date.now();
+}
+
+// ─── GAME LOOP ───
+function gameLoop() {
+  // passive income tick (every 100ms = 0.1 sec)
+  const tick = G.passiveIncome * 0.1;
+  G.balance += tick;
+  G.totalEarned += tick;
+  calcLevel();
+  updateHUD();
+}
+
+// ─── INIT ───
+loadGame();
+initPrices();
+calcPassive();
+calcLevel();
+applyOffline();
+renderBusinesses();
+renderStocks();
+renderCrypto();
+renderEstate();
+updateHUD();
+
+setInterval(gameLoop, 100);
+setInterval(() => { tickPrices(); renderStocks(); renderCrypto(); }, 3000);
+setInterval(saveGame, 10000);
+
+// Vibration on tap
+document.getElementById('tapCoin').addEventListener('click', () => {
+  if (navigator.vibrate) navigator.vibrate(20);
+});
+</script>
+</body>
+</html>
